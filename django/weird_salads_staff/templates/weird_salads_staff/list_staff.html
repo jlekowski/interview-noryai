@@ -1,0 +1,29 @@
+{% extends "weird_salads/base.html" %}
+
+{% block title %}Weird Salads Staff{% endblock %}
+
+{% block content %}
+<article>
+  <h1>Weird Salads Staff</h1>
+  <p><a href="{% url 'index' %}">Home</a></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Location ID</th>
+        <th>Name</th>
+        <th>Age</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for staff in all_staff %}
+      <tr>
+        <td>{{staff.location}}</td>
+        <td>{{staff.name}}</td>
+        <td>{{staff.date_of_birth | timesince}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</article>
+{% endblock %}

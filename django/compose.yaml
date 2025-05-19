@@ -1,0 +1,46 @@
+# Docker compose from:
+# - https://docs.astral.sh/uv/guides/integration/docker/
+# - https://docs.docker.com/compose/file-watch/
+# - https://docs.docker.com/compose/how-tos/startup-order/
+
+services:
+  web:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "8000:8000"
+    restart: "always"
+    environment:
+      DJANGO_SETTINGS_MODULE: "weird_salads_site.settings_docker_compose"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./uv.lock
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: "F4B82F9D-730B-431E-B293-2ADDE2C2CE1F"
+      POSTGRES_USER: "django"
+      POSTGRES_DB: "django"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    ports:
+      - "6679:5432"
+
+volumes:
+  postgres:

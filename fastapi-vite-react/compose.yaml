@@ -1,0 +1,64 @@
+# Docker compose from:
+# - https://docs.astral.sh/uv/guides/integration/docker/
+# - https://docs.docker.com/compose/file-watch/
+# - https://docs.docker.com/compose/how-tos/startup-order/
+
+services:
+  frontend:
+    build: frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    restart: "always"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./frontend/yarn.lock
+        - action: sync
+          path: frontend
+          target: /app
+
+  backend:
+    build: backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "8000:8000"
+    restart: "always"
+    environment:
+      DB_URI: "postgresql+psycopg://fastapi:DA990601-0CE9-4B97-A4E1-596AE28678BA@postgres:5432/fastapi"
+    # post_start:
+    #   - command: alembic upgrade head
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/uv.lock
+        - action: sync
+          path: backend
+          target: /app
+          ignore:
+            - backend/.venv/
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: "DA990601-0CE9-4B97-A4E1-596AE28678BA"
+      POSTGRES_USER: "fastapi"
+      POSTGRES_DB: "fastapi"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastapi -d fastapi"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    ports:
+      # Expose on a port which isn't likely to be already used
+      - "6679:5432"
+
+volumes:
+  postgres:

@@ -1,0 +1,19 @@
+<h1>Staff List</h1>
+<% if @staff.none? %>
+  <p>No staff set up!</p>
+<% else %>
+  <table>
+    <tr>
+      <th>Location ID</th>
+      <th>Name</th>
+      <th>Age</th>
+    </tr>
+    <% @staff.sort_by {|p| [p.location_id, p.name] }.each do |person| %>
+    <tr>
+      <td><%= person.location_id %></td>
+      <td><%= person.name %></td>
+      <td><%= ActiveSupport::Duration.build(Time.now - person.date_of_birth.beginning_of_day).in_years.round(2) %> years</td>
+    </tr>
+    <% end %>
+  </table>
+<% end %>
