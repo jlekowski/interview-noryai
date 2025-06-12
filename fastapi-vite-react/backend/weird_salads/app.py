@@ -1,13 +1,14 @@
 import os
 from typing import Sequence
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-from sqlalchemy import select
+from sqlalchemy import select, text, case, update, and_
 
 from fastapi.middleware.cors import CORSMiddleware
 
 from .dependencies import SessionDep
-from .models import Staff, StaffPublic, Menu, MenuPublic
+from .models import Staff, StaffPublic, Menu, MenuPublic, Recipe, Stock
 
 
 app = FastAPI()
@@ -25,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class ConsumeRecipeRequest(BaseModel):
+    staff_id: int
 
 @app.get("/")
 async def root():
@@ -57,6 +61,72 @@ def list_menu(session: SessionDep) -> Sequence[Menu]:
     except ValueError:
         raise HTTPException(status_code=500, detail="APP_LOCATION_ID must be an integer")
 
-    stmt = select(Menu).where(Menu.location_id == location_id)
-    return session.scalars(stmt).all()
+    sql = text("""
+        SELECT
+            m.id,
+            r.recipe_id,
+            r.name,
+            m.price,
+            bool_and(COALESCE(s.quantity, 0) >= r.quantity) AS is_available
+        FROM menu m
+        JOIN recipe r ON m.recipe_id = r.recipe_id
+        LEFT JOIN stock s ON r.ingredient_id = s.ingredient_id
+        WHERE m.location_id = :location_id
+        GROUP BY m.id, r.recipe_id, m.price, r.name
+    """)
 
+    result = session.execute(sql, {"location_id": location_id})
+    rows = result.mappings().all()
+
+    return rows
+
+@app.post("/recipe/{recipe_id}/consume")
+def consume_stock(recipe_id: int, req: ConsumeRecipeRequest, session: SessionDep):
+    # ignoring for the time being, but would be used to log who made the change
+    staff_id = req.staff_id
+    # validate that the recipe "belongs" to the location
+
+    location_id = int(os.getenv("APP_LOCATION_ID"))
+    stmt = select(Recipe).where(Recipe.recipe_id == recipe_id)
+    recipe_ingredients = session.scalars(stmt).all()
+
+    if not recipe_ingredients:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    # Prepare WHEN conditions for the CASE statement
+    when_conditions = [(r.ingredient_id, r.quantity) for r in recipe_ingredients]
+
+    # Build CASE expression with Stock.ingredient_id
+    case_stmt = case(
+        {ingredient_id: quantity for ingredient_id, quantity in when_conditions},
+        value=Stock.ingredient_id,
+        else_=0
+    )
+
+    # Generate SQLAlchemy update statement
+    update_stmt = (
+        update(Stock)
+        .where(
+            and_(
+                Stock.ingredient_id.in_([r.ingredient_id for r in recipe_ingredients]),
+                Stock.location_id == location_id
+            )
+        )
+        .values(quantity=Stock.quantity - case_stmt)
+    )
+
+    session.execute(update_stmt)
+    session.commit()
+
+    """
+    e.g.
+    UPDATE stock
+    SET quantity = quantity - CASE ingredient_id
+                                  WHEN 15 THEN 1
+                                  WHEN 2 THEN 3
+                                  ELSE 0
+                              END
+    WHERE location_id = 1;
+    """
+
+    return staff_id

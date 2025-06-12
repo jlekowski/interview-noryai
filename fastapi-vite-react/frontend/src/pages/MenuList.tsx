@@ -35,6 +35,20 @@ const MenuList = ({ staffId, onBack }: MenuListProps) => {
     fetchMenu();
   }, []);
 
+  const onSelectMenuItem = async (recipeId: number) => {
+    try {
+      await axios.post(
+        `http://localhost:8000/recipe/${recipeId}/consume`,
+        {
+          staff_id: staffId,
+        }
+      );
+      fetchMenu(); // refresh after backend update
+    } catch (err) {
+      console.error('Error consuming recipe:', err);
+    }
+  };
+
   if (loading) return <p>Loading menu...</p>;
 
   return (
@@ -58,6 +72,7 @@ const MenuList = ({ staffId, onBack }: MenuListProps) => {
                   color: menu.is_available ? 'black' : '#888',
                   cursor: menu.is_available ? 'pointer' : 'not-allowed'
                 }}
+                onClick={() => menu.is_available && onSelectMenuItem(menu.recipe_id)}
             >
               <td>{menu.name}</td>
               <td>{menu.price}</td>

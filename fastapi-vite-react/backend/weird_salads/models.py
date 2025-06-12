@@ -23,9 +23,9 @@ class StaffPublic(StaffBase):
 
 class MenuBase(SQLModel):
     recipe_id: int
-    location_id: int
+    name: str
     price: Decimal
-    modifiers: int | None = None
+    is_available: bool
 
 
 class Menu(MenuBase, table=True):
@@ -35,3 +35,23 @@ class Menu(MenuBase, table=True):
 class MenuPublic(MenuBase):
     id: int = Field(exclude=True)
 
+
+class RecipeBase(SQLModel):
+    recipe_id: int
+    name: str
+    quantity: Decimal
+    ingredient_id: int
+
+
+class Recipe(RecipeBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+
+
+class StockBase(SQLModel):
+    location_id: int
+    quantity: Decimal
+    ingredient_id: int
+
+
+class Stock(StockBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
