@@ -15,7 +15,11 @@ function calculateAge(dob: string): number {
   return age;
 }
 
-const StaffList = () => {
+type StaffListProps = {
+  onSelectStaff: (staffId: number) => void;
+};
+
+const StaffList = ({ onSelectStaff }: StaffListProps) => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +52,7 @@ const StaffList = () => {
         <tbody>
           {staffList.map((staff) => (
             <tr key={staff.staff_id}>
-              <td>{staff.name}</td>
+              <td><button onClick={() => onSelectStaff(staff.staff_id)}>{staff.name}</button></td>
               <td>{calculateAge(staff.date_of_birth)}</td>
               <td>{staff.location}</td>
             </tr>

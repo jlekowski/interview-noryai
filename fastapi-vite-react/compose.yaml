@@ -30,6 +30,7 @@ services:
     restart: "always"
     environment:
       DB_URI: "postgresql+psycopg://fastapi:DA990601-0CE9-4B97-A4E1-596AE28678BA@postgres:5432/fastapi"
+      APP_LOCATION_ID: ${APP_LOCATION_ID}
     # post_start:
     #   - command: alembic upgrade head
     develop:

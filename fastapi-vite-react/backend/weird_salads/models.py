@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from decimal import Decimal
 from sqlmodel import Field, SQLModel
 
 
@@ -18,3 +19,19 @@ class Staff(StaffBase, table=True):
 
 class StaffPublic(StaffBase):
     id: int = Field(exclude=True)
+
+
+class MenuBase(SQLModel):
+    recipe_id: int
+    location_id: int
+    price: Decimal
+    modifiers: int | None = None
+
+
+class Menu(MenuBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+
+
+class MenuPublic(MenuBase):
+    id: int = Field(exclude=True)
+
