@@ -61,6 +61,7 @@ def list_menu(session: SessionDep) -> Sequence[Menu]:
     except ValueError:
         raise HTTPException(status_code=500, detail="APP_LOCATION_ID must be an integer")
 
+    # Problem solved: showing item availability (but not showing the number of the items available)
     sql = text("""
         SELECT
             m.id,
@@ -93,6 +94,7 @@ def consume_stock(recipe_id: int, req: ConsumeRecipeRequest, session: SessionDep
     if not recipe_ingredients:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
+    # Problem solved: it was interesting to find a way to update multiple ingredients' stock in one UPDATE query
     # Prepare WHEN conditions for the CASE statement
     when_conditions = [(r.ingredient_id, r.quantity) for r in recipe_ingredients]
 
